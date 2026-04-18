@@ -5,25 +5,31 @@ from .logger import Logger
 from .encrypt import md5_hash
 from .config import CONFIG
 
-METHOD = "chaojiying"  # or "ttshitu"
-
 
 class Recognizer:
 
-    def __init__(self, method=METHOD):
-        self._method = method
-        self._client = Client(method)
+    def __init__(self):
+        self._method = CONFIG["recognize"]["method"]
+        self._client = Client(self._method)
         self._logger = Logger("recognizer")
 
     def recognize_captcha(
         self, image_base64: str, words: list[str]
     ) -> list[tuple[int, int]]:
+        start = time.perf_counter()
+
         if self._method == "ttshitu":
             result = self._ttshitu(image_base64, words)
         elif self._method == "chaojiying":
             result = self._chaojiying(image_base64, words)
         else:
             raise ValueError("Invalid recognition method")
+
+        elapsed = time.perf_counter() - start
+        self._logger.info(f"Recognized captcha in {elapsed:.2f} seconds: {result}")
+        self._logger.info(f"Sleeping for 1 second...")
+        time.sleep(1)  # 否则太快了，check 完 submit 时会报错 '(250) 验证码非法校验'
+        self._logger.breathe()
 
         # "234,47|168,90|101,63" -> [(234, 47), (168, 90), (101, 63)]
         return [
@@ -32,50 +38,30 @@ class Recognizer:
         ]
 
     def _ttshitu(self, image_base64: str, words: list[str]) -> str:
-        start = time.perf_counter()
-
         resp = self._client.post(
             "http://api.ttshitu.com/predict",
             data={
-                "username": CONFIG["recognize"]["username"],
-                "password": CONFIG["recognize"]["password"],
-                "typeid": "20",
+                "username": CONFIG["recognize:ttshitu"]["username"],
+                "password": CONFIG["recognize:ttshitu"]["password"],
+                "typeid": "43",  # 快速点选，http://www.ttshitu.com/news/9c2cae0531a147d2bafac3cd737109e7.html
                 "image": image_base64,
-                "remark": str(words),
+                "content": "".join(words),
             },
-            timeout=8.0,
+            timeout=4.0,
         )
-
-        result = resp.json()["data"]["result"]
-
-        elapsed = time.perf_counter() - start
-        self._logger.info(f"Recognized captcha in {elapsed:.2f} seconds: {result}")
-        self._logger.breathe()
-
-        return result
+        return resp.json()["data"]["result"]
 
     def _chaojiying(self, image_base64: str, words: list[str]) -> str:
-        start = time.perf_counter()
-
         resp = self._client.post(
             "https://upload.chaojiying.net/Upload/Processing.php",
             data={
-                "user": CONFIG["recognize"]["username"],
-                "pass2": md5_hash(CONFIG["recognize"]["password"]),
-                "softid": CONFIG["recognize"]["softid"],
+                "user": CONFIG["recognize:chaojiying"]["username"],
+                "pass2": md5_hash(CONFIG["recognize:chaojiying"]["password"]),
+                "softid": CONFIG["recognize:chaojiying"]["softid"],
                 "codetype": "9801",
                 "str_debug": f"{{8a:{','.join(words)}/8a}}",
                 "file_base64": image_base64,
             },
             timeout=4.0,
         )
-
-        result = resp.json()["pic_str"]
-
-        elapsed = time.perf_counter() - start
-        self._logger.info(f"Recognized captcha in {elapsed:.2f} seconds: {result}")
-        self._logger.info(f"Sleeping for 1 second...")
-        time.sleep(1)  # 否则太快了，check 完 submit 时会报错 '(250) 验证码非法校验'
-        self._logger.breathe()
-
-        return result
+        return resp.json()["pic_str"]
