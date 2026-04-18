@@ -26,8 +26,11 @@ class Client:
         if isinstance(data, dict):
             for k, v in data.items():
                 if isinstance(v, dict):
-                    self._logger.debug(f"{indent}{k}:")
-                    self._log_json(v, level + 1)
+                    if len(v.keys()) >= 30:  # reservationDateSpaceInfo is too long
+                        self._logger.debug(f"{indent}{k}: {v}")
+                    else:
+                        self._logger.debug(f"{indent}{k}:")
+                        self._log_json(v, level + 1)
                 elif isinstance(v, list):
                     self._logger.debug(f"{indent}{k}: Array({len(v)}) {v}")
                     self._log_json(v, level + 1)

@@ -20,6 +20,7 @@ def wait_until(dt: datetime, logger: Logger, label: str, strict: bool):
 
         if remaining <= 0:
             logger.info(f"Target time {dt.strftime('%Y-%m-%d %H:%M:%S')} reached!")
+            logger.info(f"Starting '{label}'...")
             logger.breathe()
             return
 

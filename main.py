@@ -1,5 +1,7 @@
+import argparse
 import base64
 import json
+import re
 import time
 from datetime import datetime, timedelta
 import random
@@ -17,19 +19,21 @@ from utils.time import get_release_time, wait_until
 from utils.config import LOGS_DIR, LOG_FILE, CONFIG
 
 
-venue = "86"
-target_date = "2026-04-21"
-target_times = ["19:00", "20:00"]
-preferred_spaces = ["5号", "6号"]
-
-
-def main():
+def main(
+    venue: str, target_date: str, target_times: list[str], preferred_spaces: list[str]
+):
     logger = Logger("main")
     logger.info(f"Starting main function")
     logger.breathe()
 
     client = EpeClient("epe")
     recognizer = Recognizer()
+
+    logger.info(f"Venue ID: {venue}")
+    logger.info(f"Target date: {target_date}")
+    logger.info(f"Target times: {target_times}")
+    logger.info(f"Preferred spaces: {preferred_spaces}")
+    logger.breathe()
 
     release_time = get_release_time(target_date)
     login_time = release_time - timedelta(minutes=3)
@@ -336,7 +340,7 @@ def main():
                         "orderPrice": target_trade["orderFee"],
                         "orderPin": generate_order_pin(),
                         "venueSiteId": venue,
-                        "phone": CONFIG["iaaa"]["phone"],
+                        "phone": CONFIG["epe"]["phone"],
                     },
                 )
 
@@ -393,4 +397,80 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="PKU Auto Venues Reservation")
+    parser.add_argument(
+        "-v", "--venue", required=True, help="Venue site name or ID, e.g. 86"
+    )
+    parser.add_argument(
+        "-d", "--date", required=True, help="Target date, e.g. 2026-04-01"
+    )
+    parser.add_argument(
+        "-t",
+        "--times",
+        required=True,
+        nargs="+",
+        help="Target begin times, e.g. 15:00 20:00",
+    )
+    parser.add_argument(
+        "-s",
+        "--spaces",
+        nargs="*",
+        default=[],
+        help="Preferred space names (optional), e.g. 4号 5号",
+    )
+    args = parser.parse_args()
+
+    # Process venue
+    venue_aliases = {
+        "qdb": "60",
+        "邱德拔": "60",
+        "54": "86",
+        "ws": "86",
+        "五四": "86",
+    }
+    if args.venue in venue_aliases:
+        venue = venue_aliases[args.venue]
+    else:
+        try:
+            int(args.venue)
+        except ValueError:
+            parser.error(
+                f"Invalid -v/--venue {args.venue!r}: must be an alias or an integer"
+            )
+        venue = args.venue
+
+    # Process date
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", args.date):
+        parser.error(
+            f"Invalid -d/--date {args.date!r}: must be in format YYYY-MM-DD, e.g. 2026-04-01"
+        )
+    try:
+        datetime.strptime(args.date, "%Y-%m-%d")
+    except ValueError:
+        parser.error(f"Invalid -d/--date {args.date!r}: not a valid calendar date")
+    target_date = args.date
+
+    # Process times
+    target_times = []
+    for t in args.times:
+        if not re.fullmatch(r"\d{2}:\d{2}", t):
+            parser.error(
+                f"Invalid -t/--times item {t!r}: must be in format HH:MM, e.g. 19:00"
+            )
+        target_times.append(t)
+
+    # Process spaces
+    preferred_spaces = []
+    for s in args.spaces:
+        try:
+            int(s)
+            preferred_spaces.append(f"{s}号")
+        except ValueError:
+            preferred_spaces.append(s)
+
+    main(
+        venue=venue,
+        target_date=target_date,
+        target_times=target_times,
+        preferred_spaces=preferred_spaces,
+    )
