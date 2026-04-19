@@ -387,7 +387,7 @@ def main(
                 raise Exception(f"payFee not found in pay response")
         except Exception as e:
             raise Exception(
-                f"The reservation order has been submitted successfully, but I failed to pay for it. Please pay for it manually in 10 minutes. Error: {e}"
+                f"Please pay for the reservation order manually in 10 minutes. Error: {e}"
             )
 
         logger.info(
