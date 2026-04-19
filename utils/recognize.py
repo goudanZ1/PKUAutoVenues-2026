@@ -27,8 +27,6 @@ class Recognizer:
 
         elapsed = time.perf_counter() - start
         self._logger.info(f"Recognized captcha in {elapsed:.2f} seconds: {result}")
-        self._logger.info(f"Sleeping for 1 second...")
-        time.sleep(1)  # 否则太快了，check 完 submit 时会报错 '(250) 验证码非法校验'
         self._logger.breathe()
 
         # "234,47|168,90|101,63" -> [(234, 47), (168, 90), (101, 63)]

@@ -36,14 +36,13 @@ def main(
     logger.breathe()
 
     release_time = get_release_time(target_date)
-    login_time = release_time - timedelta(minutes=3)
-    captcha_time = release_time - timedelta(seconds=15)
+    login_time = release_time - timedelta(minutes=1)
+    # captcha_time = release_time - timedelta(seconds=15)
 
     logger.info(f"Quota release time: {release_time.strftime('%Y-%m-%d %H:%M:%S')}")
     logger.info(f"Plan:")
     logger.info(f"  - login at {login_time.strftime('%H:%M:%S')}")
-    logger.info(f"  - recognize captcha at {captcha_time.strftime('%H:%M:%S')}")
-    logger.info(f"  - fetch info and submit at {release_time.strftime('%H:%M:%S')}")
+    logger.info(f"  - start main loop at {release_time.strftime('%H:%M:%S')}")
     logger.breathe()
 
     try:
@@ -153,19 +152,20 @@ def main(
         """
 
         max_turns = 20
-        retry_delay = 0.5
+        retry_delay = 0.2
 
         # 填一次验证码只能用于一次 submit 请求，如果 submit 失败了，需要重新识别验证码，所以这里设计成循环
-        # 由于识别验证码比较耗时间，最好先识别验证码再请求 info 数据，确保 info 数据的时效性，减少 submit 失败的概率
-        # 为了在 12 点更快提交 order，甚至可以在 12 点之前就识别好验证码，一到 12 点立刻获取 info 并提交
+        # 由于识别验证码需要耗一些时间，最好先识别验证码再请求 info 数据，确保 info 数据的时效性，减少 submit 失败的概率
+
+        # 经试验，“在 12 点之前就识别好验证码，一到 12 点立刻获取 info 并提交” 是不行的，
+        # 过了 12 点验证码会失效，submit 时会报 '(250) 验证码没有通过'
 
         client_point_uid = f"point-{generate_uuid()}"
 
+        wait_until(release_time, logger, "main loop", strict=True)
+
         for turn in range(1, max_turns + 1):
             try:
-                if turn == 1:
-                    wait_until(captcha_time, logger, "recognize captcha", strict=True)
-
                 # Get captcha
                 get_captcha_data = client.epe_get(
                     "https://epe.pku.edu.cn/venue-server/api/captcha/get",
@@ -204,7 +204,7 @@ def main(
                 recognize_result = recognizer.recognize_captcha(image_base64, words)
 
                 # [(234, 47), (168, 90), (101, 63)]
-                # -> [{"x":234,"y":47},{"x":168,"y":90},{"x":101,"y":63}]
+                # -> '[{"x":234,"y":47},{"x":168,"y":90},{"x":101,"y":63}]'
                 recognized_points = json.dumps(
                     [{"x": x, "y": y} for x, y in recognize_result],
                     separators=(",", ":"),
@@ -227,15 +227,9 @@ def main(
                         f"Failed to pass captcha check, maybe the recognition is wrong: {check_captcha_data.get('repMsg')}"
                     )
 
+                captcha_verified_at = time.perf_counter()
+
                 logger.info("Captcha verified successfully!")
-                logger.breathe()
-
-                # 如果前面验证码识别错误的话会 raise 出去立刻在新的 turn 开始重试，还是会卡在这里
-                wait_until(release_time, logger, "fetch info", strict=True)
-
-                logger.info(f"Target date: {target_date}")
-                logger.info(f"Target times: {target_times}")
-                logger.info(f"Preferred spaces: {preferred_spaces}")
                 logger.breathe()
 
                 # Fetch reservation info
@@ -246,6 +240,11 @@ def main(
                         "searchDate": target_date,
                     },
                 )
+
+                logger.debug(f"Target date: {target_date}")
+                logger.debug(f"Target times: {target_times}")
+                logger.debug(f"Preferred spaces: {preferred_spaces}")
+                logger.breathe()
 
                 space_time_info: list[dict] = info_data.get("spaceTimeInfo", [])
                 time_to_id: dict[str, str] = {
@@ -324,6 +323,13 @@ def main(
                 else:
                     raise Exception(f"None of the target times have available spaces")
 
+                # 如果 check captcha 后 submit 太快，submit 时会报 '(250) 验证码非法校验'
+                elapsed = time.perf_counter() - captcha_verified_at
+                if elapsed < 1:
+                    logger.info(f"Sleep for {1 - elapsed:.2f} seconds...")
+                    logger.breathe()
+                    time.sleep(1 - elapsed)
+
                 # Submit reservation order
                 submit_data = client.epe_post(
                     "https://epe.pku.edu.cn/venue-server/api/reservation/order/submit",
@@ -381,10 +387,12 @@ def main(
                 raise Exception(f"payFee not found in pay response")
         except Exception as e:
             raise Exception(
-                f"The reservation order has been submitted successfully, but I failed to pay for it. Please pay for it manually ASAP. Error: {e}"
+                f"The reservation order has been submitted successfully, but I failed to pay for it. Please pay for it manually in 10 minutes. Error: {e}"
             )
 
-        logger.info(f"Successfully paid ¥{pay_fee} for the reservation order")
+        logger.info(
+            f"Successfully paid ¥{pay_fee} for the reservation order with campus card"
+        )
         logger.info(f"Check the order online: https://epe.pku.edu.cn/venue/orders")
         logger.info(f"Check the log file: {LOG_FILE}")
         logger.breathe()
