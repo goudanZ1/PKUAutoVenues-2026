@@ -15,7 +15,7 @@ from utils.encrypt import (
     generate_order_pin,
 )
 from utils.recognize import Recognizer
-from utils.time import get_release_time, wait_until
+from utils.time import get_next_weekday, get_release_time, wait_until
 from utils.config import LOGS_DIR, LOG_FILE, CONFIG
 
 
@@ -407,10 +407,13 @@ def main(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PKU Auto Venues Reservation")
     parser.add_argument(
-        "-v", "--venue", required=True, help="Venue site name or ID, e.g. 86"
+        "-v", "--venue", required=True, help="Venue site name or ID, e.g. qdb / 86"
     )
     parser.add_argument(
-        "-d", "--date", required=True, help="Target date, e.g. 2026-04-01"
+        "-d",
+        "--date",
+        required=True,
+        help="Target date or weekday, e.g. 2026-04-01 / 6 (for next Saturday)",
     )
     parser.add_argument(
         "-t",
@@ -448,15 +451,18 @@ if __name__ == "__main__":
         venue = args.venue
 
     # Process date
-    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", args.date):
+    if re.fullmatch(r"[1-7]", args.date):
+        target_date = get_next_weekday(int(args.date))
+    elif re.fullmatch(r"\d{4}-\d{2}-\d{2}", args.date):
+        try:
+            datetime.strptime(args.date, "%Y-%m-%d")
+        except ValueError:
+            parser.error(f"Invalid -d/--date {args.date!r}: not a valid calendar date")
+        target_date = args.date
+    else:
         parser.error(
-            f"Invalid -d/--date {args.date!r}: must be in format YYYY-MM-DD, e.g. 2026-04-01"
+            f"Invalid -d/--date {args.date!r}: must be in format YYYY-MM-DD (e.g. 2026-04-01) or an integer 1~7 (weekday)"
         )
-    try:
-        datetime.strptime(args.date, "%Y-%m-%d")
-    except ValueError:
-        parser.error(f"Invalid -d/--date {args.date!r}: not a valid calendar date")
-    target_date = args.date
 
     # Process times
     target_times = []

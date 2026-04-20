@@ -7,7 +7,7 @@ echo 'cd ~/PKUAutoVenues-2026 && \
         --date 2026-04-22 \
         --times 19:00 20:00 15:00 \
         --spaces 5 1' \
-    | at 11:50 2026-04-19
+| at 11:50 2026-04-19
 ```
 
 <img src="assets/preview.png" alt="Preview">
@@ -84,23 +84,23 @@ uv run main.py -h
 
   预约优先级：`15:00 5号` > `15:00 6号` > `15:00 其他场地` > `20:00 5号` > `20:00 6号` > `20:00 其他场地`，成功预约到一场后就退出
 
-- 预约 [五四羽毛球馆](https://epe.pku.edu.cn/venue/venue-reservation/86) 2026-04-30 的 18:00-19:00 时段，随机选择可预约场地（无特别偏好）：
+- 预约 [五四羽毛球馆](https://epe.pku.edu.cn/venue/venue-reservation/86) 周六（即将到来的最近的周六，包括今天）的 18:00-19:00 时段，随机选择可预约场地（无特别偏好）：
 
   ```bash
   uv run main.py \
     -v 54 \
-    -d 2026-04-30 \
+    -d 6 \
     -t 18:00
   ```
 
   `venue` 参数填写 54 / ws / 五四 / 86 都指向五四羽毛球馆，对于 ID 54 被占用一事 [邱德拔 121 化妆室](https://epe.pku.edu.cn/venue/venue-reservation/54) 表示没意见
 
-- 预约 [邱德拔台球厅](https://epe.pku.edu.cn/venue/venue-reservation/64)（？）2026-04-30 的 17:00-18:00 时段，优先选择 “斯诺克”（？）或 23 号场地：
+- 预约 [邱德拔台球厅](https://epe.pku.edu.cn/venue/venue-reservation/64)（？）周日的 17:00-18:00 时段，优先选择 “斯诺克”（？）或 23 号场地：
 
   ```bash
   uv run main.py \
     -v 64 \
-    -d 2026-04-30 \
+    -d 7 \
     -t 17:00 \
     -s 斯诺克 23
   ```
@@ -127,12 +127,34 @@ echo 'cd ~/PKUAutoVenues-2026 && \
         --date 2026-04-22 \
         --times 19:00 20:00 15:00 \
         --spaces 5 1' \
-    | at 11:50 2026-04-19
+| at 11:50 2026-04-19
 ```
+
+- 记得把 `~/PKUAutoVenues-2026` 替换成项目的实际位置！
+
+- `atq` 查看所有已设置的定时任务，`atrm 任务号` 取消任务
+
+如果想要周期运行（如固定每周四中午预约周日的场地），可以使用 Linux 的 `cron` 服务：
+
+```bash
+(crontab -l 2>/dev/null; \
+ echo "50 11 * * 4 \
+       cd ~/PKUAutoVenues-2026 && \
+       $(which uv) run main.py \
+         -v 54 \
+         -d 7 \
+         -t 19:00 20:00") \
+| crontab -
+```
+
+- 这里 `50 11 * * 4` 表示每周四 11:50，`-d 7` 指定要预约周日的场地
+
+- 记得把 `~/PKUAutoVenues-2026` 替换成项目的实际位置！
+
+- `crontab -l` 查看所有已设置的周期任务，`crontab -e` 打开编辑器管理所有周期任务（上面这串命令和 `crontab -e` 手动追加一行的效果是一样的）
 
 ## TODO
 
-- cron
 - notify
 - preflight
 - helper

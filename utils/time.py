@@ -5,6 +5,14 @@ from zoneinfo import ZoneInfo
 from .logger import Logger
 
 
+def get_next_weekday(weekday: int) -> str:
+    """返回下一个周 weekday（1~7，包括今天）的日期"""
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    days_ahead = (weekday - 1 - today.weekday()) % 7  # weekday(): 0~6
+    target = today + timedelta(days=days_ahead)
+    return target.strftime("%Y-%m-%d")
+
+
 def get_release_time(target_date: str) -> datetime:
     """根据 target_date 反推预约名额放出的时间（三天前的中午 12 点）"""
     d = datetime.strptime(target_date, "%Y-%m-%d")
