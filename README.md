@@ -3,14 +3,16 @@
 ```bash
 echo 'cd ~/PKUAutoVenues-2026 && \
       uv run main.py \
-        --venue qdb \
-        --date 2026-04-22 \
-        --times 19:00 20:00 15:00 \
-        --spaces 5 1' \
-| at 11:50 2026-04-19
+        --venue 五四 \
+        --date 2026-05-03 \
+        --times 19:00 20:00 \
+        --spaces 9 8' \
+| at 11:50 2026-04-30
 ```
 
 <img src="assets/preview.png" alt="Preview">
+
+<img src="assets/notification.png" alt="Notification" width="500">
 
 ## 致谢
 
@@ -18,7 +20,7 @@ echo 'cd ~/PKUAutoVenues-2026 && \
 
 - [qqworld-tutu/PKUautoBookingVenues-fixed-by-cq-tutu](https://github.com/qqworld-tutu/PKUautoBookingVenues-fixed-by-cq-tutu)
 
-## 配置环境
+## 如何使用（<a href="https://www.kimi.com/_prefill_chat?prefill_prompt=请阅读一下 https://github.com/goudanZ1/PKUAutoVenues-2026 这个项目，我应该如何使用它？&send_immediately=true&force_search=true">Chat with Kimi</a>）
 
 1. 安装 [uv](https://docs.astral.sh/uv/)
 
@@ -33,14 +35,14 @@ echo 'cd ~/PKUAutoVenues-2026 && \
    cd PKUAutoVenues-2026
    ```
 
-3. 修改配置文件
+3. 填写配置文件，详见下面的 [验证码识别](#验证码识别) 和 [消息通知](#消息通知) 部分
 
    ```bash
    cp config.sample.ini config.ini
    vim config.ini
    ```
 
-4. 运行项目
+4. 运行项目，详见下面的 [运行项目](#运行项目) 和 [定时运行](#定时运行) 部分
 
    ```bash
    uv run main.py -h
@@ -48,9 +50,36 @@ echo 'cd ~/PKUAutoVenues-2026 && \
 
 ## 验证码识别
 
-本项目推荐使用 [TT 识图](http://www.ttshitu.com/) 进行验证码识别，一次识别大概耗时 0.5 秒（不走代理），价格为 0.016 元，充值 1 元大约可以识别 62 次。你需要在网站上注册账号（如果已有账号且很久没用的话需要在网站上解锁账号），并在 `config.ini` 的 `[recognize:ttshitu]` 部分填写账号的用户名和密码。
+本项目推荐使用 [TT 识图](http://www.ttshitu.com/) 进行验证码识别，识别一次价格为 0.016 元，充值 1 元大约可以识别 62 次。你需要在网站上注册账号（如果已有账号且很久没用的话需要在网站上解锁账号），并在 `config.ini` 的 `[recognize:ttshitu]` 部分填写账号的用户名和密码。
 
-（如果你已经在超级鹰里充了很多钱，）你也可以使用 [超级鹰](https://www.chaojiying.com/) 平台进行验证码识别，你需要在 `config.ini` 的 `[recognize]` 部分将 `method` 的值改为 `chaojiying`，并在 `[recognize:chaojiying]` 部分填写账号的用户名、密码、软件 ID。超级鹰一次识别大概耗时 0.4 秒（不走代理），价格为 0.028 元，一次至少充 19 元（看起来比 [去年](https://github.com/qqworld-tutu/PKUautoBookingVenues-fixed-by-cq-tutu#api) 更坑了）。
+（如果你已经在超级鹰里充了很多钱，）你也可以选择使用 [超级鹰](https://www.chaojiying.com/) 平台进行验证码识别，识别一次价格为 0.028 元，一次至少充 19 元（看起来比 [去年](https://github.com/qqworld-tutu/PKUautoBookingVenues-fixed-by-cq-tutu#api) 更坑了）。你需要在 `config.ini` 的 `[recognize]` 部分将 `method` 的值改为 `chaojiying`，并在 `[recognize:chaojiying]` 部分填写账号的用户名、密码、软件 ID。
+
+非高峰时段，TT 识图的响应耗时约为 0.5 秒，超级鹰约为 0.4 秒；高峰时段（12:00 前后），TT 识图的响应耗时约为 1~1.5 秒，超级鹰尚未充分测试。
+
+## 消息通知
+
+可以选择以下通知方式中的一种，在预约流程完成后会自动向你发送结果。你需要在 `config.ini` 中修改 `[notify]` 部分 `method` 的值，并在对应的 `[notify:{method}]` 部分填写该通知方式所需的配置。（你也可以保留 `method = none`，表示不启用通知功能，这样下方配置都无需修改，可以直接跳到 [运行项目](#运行项目) 部分。）
+
+### 1. Email：给自己发邮件
+
+基于 SMTP 协议，用自己的邮箱账号给自己发送邮件，手机上的邮箱客户端（如网易邮箱大师等）就可以很方便地收到通知。目前仅适配了 `@stu.pku.edu.cn`、`@pku.edu.cn`、`@qq.com`、`@163.com`、`@126.com` 邮箱。
+
+以 `@stu.pku.edu.cn` 邮箱为例（其他邮箱类似），你需要在浏览器中登录 [网页版邮箱](https://mail.stu.pku.edu.cn/)，进入 “设置” - **“客户端设置”** 页面，点击 **“生成客户端授权密码”**，自行设置合适的客户端名称（如 “PKUAutoVenues”）和到期时间，将邮箱地址和 **生成的授权码**（而不是原始密码）填到 `config.ini` 的 `[notify:email]` 部分。注意，为了通过 Python 发送邮件，需要 **允许非官方客户端使用 SMTP 服务**，即页面中 “非网易官方客户端” 的权限至少要有 “IMAP / SMTP 协议” 和 “POP / SMTP 协议” 其中一项。
+
+> 下面三种方式都类似于 “向注册了特定 SendKey 的客户端发通知”，小标题说明了 “客户端” 的存在形式：
+
+### 2. Server酱<sup>3</sup>：手机 APP（主流手机系统均可安装）
+
+1. 打开 [Server酱<sup>3</sup> 官网](https://sc3.ft07.com/)，使用微信扫码登录，在 [SendKey 页面](https://sc3.ft07.com/sendkey) 复制 SendKey（以 `sctp` 开头的字符串），填到 `config.ini` 的 `[notify:sc3]` 部分
+2. 访问 [下载页面](https://sc3.ft07.com/client)，在手机上安装 Server酱 APP，启动 APP 后填入 SendKey 或扫描 [SendKey 页面](https://sc3.ft07.com/sendkey) 上的二维码以登录
+
+### 3. Server酱<sup>Turbo</sup>：微信服务号
+
+打开 [Server酱<sup>Turbo</sup> 官网](https://sct.ftqq.com/)，使用微信扫码登录（关注方糖服务号），在 [Key&API 页面](https://sct.ftqq.com/sendkey) 复制 SendKey（以 `SCT` 开头的字符串），填到 `config.ini` 的 `[notify:sct]` 部分
+
+### 4. Bark：手机 APP（仅 iOS）
+
+在手机 App Store 下载 [Bark](https://apps.apple.com/cn/app/id1403753865)，打开 APP 首页并复制任意一个测试 URL，`https://api.day.app/` 后面的一串字符串就是你的推送 Key，将它填到 `config.ini` 的 `[notify:bark]` 部分
 
 ## 运行项目
 
@@ -155,6 +184,5 @@ echo 'cd ~/PKUAutoVenues-2026 && \
 
 ## TODO
 
-- notify
 - preflight
 - helper

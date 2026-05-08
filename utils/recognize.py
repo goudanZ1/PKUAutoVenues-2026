@@ -9,7 +9,7 @@ from .config import CONFIG
 class Recognizer:
 
     def __init__(self):
-        self._method = CONFIG["recognize"]["method"]
+        self._method = CONFIG.get("recognize", "method", fallback="")
         self._client = Client(self._method)
         self._logger = Logger("recognizer")
 
@@ -23,10 +23,14 @@ class Recognizer:
         elif self._method == "chaojiying":
             result = self._chaojiying(image_base64, words)
         else:
-            raise ValueError("Invalid recognition method")
+            raise Exception(
+                "Invalid recognition method, must be 'ttshitu' or 'chaojiying'"
+            )
 
         elapsed = time.perf_counter() - start
-        self._logger.info(f"Recognized captcha in {elapsed:.2f} seconds: {result}")
+        self._logger.info(
+            f"Recognized captcha by {self._method} in {elapsed:.2f} seconds: {result}"
+        )
         self._logger.breathe()
 
         # "234,47|168,90|101,63" -> [(234, 47), (168, 90), (101, 63)]

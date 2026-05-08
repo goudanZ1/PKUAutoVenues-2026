@@ -12,6 +12,9 @@ wheels/
 # IDE settings
 .vscode/
 
+# macOS
+.DS_Store
+
 # Logs
 logs/
 

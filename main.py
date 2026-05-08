@@ -15,6 +15,7 @@ from utils.encrypt import (
     generate_order_pin,
 )
 from utils.recognize import Recognizer
+from utils.notify import Notifier
 from utils.time import get_next_weekday, get_release_time, wait_until
 from utils.config import LOGS_DIR, LOG_FILE, CONFIG
 
@@ -28,6 +29,7 @@ def main(
 
     client = EpeClient("epe")
     recognizer = Recognizer()
+    notifier = Notifier()
 
     logger.info(f"Venue ID: {venue}")
     logger.info(f"Target date: {target_date}")
@@ -314,8 +316,11 @@ def main(
                             list(available_space_to_trade.values())
                         )
 
+                    selected_time = id_to_time[target_trade["timeId"]]
+                    selected_space = target_trade["spaceName"]
+
                     logger.info(
-                        f"Selected trade: {id_to_time[target_trade['timeId']]} {target_trade['spaceName']} (¥{target_trade['orderFee']})"
+                        f"Selected trade: {selected_time} {selected_space} (¥{target_trade['orderFee']})"
                     )
                     logger.breathe()
                     break
@@ -355,6 +360,9 @@ def main(
 
                 if trade_id and trade_no:
                     logger.info(f"Successfully submitted reservation order")
+                    logger.info(
+                        f"Check the order online: https://epe.pku.edu.cn/venue/orders"
+                    )
                     logger.breathe()
                     break
 
@@ -385,23 +393,31 @@ def main(
             pay_fee = pay_data.get("payFee")
             if not pay_fee:
                 raise Exception(f"payFee not found in pay response")
-        except Exception as e:
-            raise Exception(
-                f"Please pay for the reservation order manually in 10 minutes. Error: {e}"
+
+            logger.info(
+                f"Successfully paid ¥{pay_fee} for the reservation order with campus card"
+            )
+            logger.breathe()
+            notifier.notify_message(
+                "[PKUAutoVenues] 预约成功 OvO",
+                f"已预约 {target_date} {selected_time}（{selected_space}场地），并成功用校园卡支付 {pay_fee} 元",
             )
 
-        logger.info(
-            f"Successfully paid ¥{pay_fee} for the reservation order with campus card"
-        )
-        logger.info(f"Check the order online: https://epe.pku.edu.cn/venue/orders")
-        logger.info(f"Check the log file: {LOG_FILE}")
-        logger.breathe()
-        # notify
+        except Exception as e:
+            logger.error(f"Failed to pay for the reservation order: {e}")
+            logger.breathe()
+            notifier.notify_message(
+                "[PKUAutoVenues] 需要手动付款 >_<",
+                f"已成功预约 {target_date} {selected_time}（{selected_space}场地），请在十分钟内手动完成支付 (Error: {e})",
+            )
 
     except Exception as e:
         logger.error(str(e))
-        # notify
-        exit(1)
+        logger.breathe()
+        notifier.notify_message("[PKUAutoVenues] 预约失败 QAQ", str(e))
+
+    finally:
+        logger.info(f"Check the log file: {LOG_FILE}")
 
 
 if __name__ == "__main__":
