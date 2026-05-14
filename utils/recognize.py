@@ -34,10 +34,18 @@ class Recognizer:
         self._logger.breathe()
 
         # "234,47|168,90|101,63" -> [(234, 47), (168, 90), (101, 63)]
-        return [
+        result_list = [
             (int(item.split(",")[0]), int(item.split(",")[1]))
             for item in result.split("|")
         ]
+
+        if len(result_list) != len(words):
+            # 认为是这个 case 超出模型的识别能力，重试可能没用，直接 raise Exception 让主流程换一张图片
+            raise Exception(
+                f"The number of recognized coordinates ({len(result_list)}) does not match the number of words ({len(words)})"
+            )
+
+        return result_list
 
     def _ttshitu(self, image_base64: str, words: list[str]) -> str:
         resp = self._client.post(
