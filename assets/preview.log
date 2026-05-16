@@ -1,7 +1,10 @@
 2026-04-30 11:50:00 [INFO] (main) Venue ID: 86
 2026-04-30 11:50:00 [INFO] (main) Target date: 2026-05-03
-2026-04-30 11:50:00 [INFO] (main) Target times: ['19:00', '20:00']
+2026-04-30 11:50:00 [INFO] (main) Target times:
+2026-04-30 11:50:00 [INFO] (main)   - begin at 19:00, 2 consecutive slots
+2026-04-30 11:50:00 [INFO] (main)   - begin at 19:00, single slot
 2026-04-30 11:50:00 [INFO] (main) Preferred spaces: ['9号', '8号']
+
 2026-04-30 11:50:00 [INFO] (main) Quota release time: 2026-04-30 12:00:00
 2026-04-30 11:50:00 [INFO] (main) Plan:
 2026-04-30 11:50:00 [INFO] (main)   - login at 11:59:00
@@ -10,10 +13,7 @@
 
 2026-04-30 11:59:00 [INFO] (main) Target time 2026-04-30 11:59:00 reached!
 2026-04-30 11:59:00 [INFO] (main) Starting 'login'...
-2026-04-30 11:59:04 [INFO] (main) IAAA login successful
-2026-04-30 11:59:04 [INFO] (main) GGTYPT login successful
-2026-04-30 11:59:04 [INFO] (main) EPE login successful
-2026-04-30 11:59:04 [INFO] (main) Role login successful
+2026-04-30 11:59:04 [INFO] (main) IAAA, GGTYPT, EPE, Role login successful
 2026-04-30 11:59:04 [INFO] (main) Waiting for 12:00:00 to start 'main loop': 55.53s remaining
 
 2026-04-30 12:00:00 [INFO] (main) Target time 2026-04-30 12:00:00 reached!
@@ -22,9 +22,9 @@
 2026-04-30 12:00:02 [INFO] (main) Words to click: ['为', '拉', '说']
 2026-04-30 12:00:03 [INFO] (recognizer) Recognized captcha by ttshitu in 1.15 seconds: 169,33|48,38|237,58
 2026-04-30 12:00:05 [INFO] (main) Captcha verified successfully!
-2026-04-30 12:00:06 [INFO] (main) Available spaces for time 19:00: ['1号', '4号', '5号', '6号', '7号', '8号', '9号']
-2026-04-30 12:00:06 [INFO] (main) Selected trade: 19:00 9号 (¥30)
+2026-04-30 12:00:06 [INFO] (main) ('19:00', 2) Available spaces: ['1号', '4号', '5号', '6号', '7号', '8号', '9号']
+2026-04-30 12:00:06 [INFO] (main) Selected: 19:00-21:00 9号场地 (¥60)
 2026-04-30 12:00:09 [INFO] (main) Successfully submitted reservation order
-2026-04-30 12:00:10 [INFO] (main) Successfully paid ¥30.0 for the reservation order with campus card
+2026-04-30 12:00:10 [INFO] (main) Successfully paid ¥60.0 for the reservation order with campus card
 2026-04-30 12:00:11 [INFO] (notifier) Sent a notification message by sc3: [PKUAutoVenues] 预约成功 OvO
 2026-04-30 12:00:11 [INFO] (main) Check the log file: logs/2026-04-30_11-50-00.log
